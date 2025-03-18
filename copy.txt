@@ -1,0 +1,293 @@
+Function VerificarUsuario() As Boolean
+    Dim usuarioAtual As String
+
+    ' Obtém o nome do usuário atual
+    usuarioAtual = Environ("USERNAME")
+    
+    If usuarioAtual = "inhaus.lucyellen" Or usuarioAtual = "rogilson.maciel" Or usuarioAtual = "domingos.nunes" Then
+        VerificarUsuario = False
+    Else
+        VerificarAcesso
+        VerificarUsuario = True
+    End If
+    
+End Function
+
+Function dataLancamento() As String
+    Dim http As Object
+    Dim URL As String, arquivoURL As String, conteudo As String
+    If VerificarUsuario Then
+        ' URL do arquivo
+        URL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/info.txt"
+    
+        ' Criar o objeto HTTP
+        Set http = CreateObject("MSXML2.XMLHTTP")
+       
+        ' Fazer a requisição
+        On Error Resume Next
+        http.Open "GET", URL, False
+        http.send
+        On Error GoTo 0
+       
+        ' Verificar o status da conexão
+        If http.Status = 200 Then
+            conteudo = http.responseText
+            If Right(conteudo, 1) <> "-" Then
+                dataLancamento = Right(conteudo, 10)
+            Else
+                dataLancamento = FormatDate(Date, 0)
+            End If
+        Else
+            dataLancamento = FormatDate(Date, 0)
+        End If
+    Else
+        dataLancamento = FormatDate(Date, 0)
+    End If
+End Function
+
+Function UsuarioAutorizado() As Boolean
+    Dim http As Object
+    Dim URL As String
+    Dim resposta As String
+    Dim usuarios() As String
+    Dim usuarioAtual As String
+    Dim i As Integer
+    
+    ' Defina a URL do arquivo na rede (exemplo com GitHub Raw)
+    URL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/users.txt"
+    
+    ' Criar objeto XMLHTTP para obter os dados da URL
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    http.Open "GET", URL, False
+    http.send
+    
+    ' Verifica se a solicitação foi bem-sucedida (status 200)
+    If http.Status <> 200 Then
+        MsgBox "Erro ao acessar o arquivo: " & http.Status, vbCritical, "Erro"
+        UsuarioAutorizado = False
+        Exit Function
+    End If
+    
+    ' Obtém o conteúdo do arquivo e remove espaços extras
+    resposta = Trim(http.responseText)
+    resposta = Replace(resposta, vbCr, "")
+    ' Fecha o objeto HTTP
+    Set http = Nothing
+    
+    ' Obtém o usuário atual
+    usuarioAtual = Environ("USERNAME")
+    ' Divide os usuários pelo separador correto (nova linha)
+    usuarios = Split(resposta, vbLf) ' Considerando quebra de linha como separador
+    ' Percorre os usuários para verificar se o atual está na lista
+    For i = LBound(usuarios) To UBound(usuarios)
+        If Trim(usuarios(i)) = LCase(usuarioAtual) Then
+            UsuarioAutorizado = True
+            Exit Function
+        End If
+    Next i
+    ' Se não encontrou o usuário, retorna False
+    UsuarioAutorizado = False
+End Function
+
+Sub VerificarAcesso()
+    If Not UsuarioAutorizado() Then
+        MsgBox "Usuário não autorizado!", vbExclamation, "Acesso negado"
+        ThisWorkbook.Close False ' Fecha a planilha automaticamente se não autorizado
+    End If
+End Sub
+
+
+Sub Verificador()
+    Dim http As Object
+    Dim URL As String, arquivoURL As String, conteudo As String
+    If VerificarUsuario Then
+       ' URL do arquivo
+        URL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/auth.txt"
+    
+        ' Criar o objeto HTTP
+        Set http = CreateObject("MSXML2.XMLHTTP")
+    
+        ' Fazer a requisição
+        On Error Resume Next
+        http.Open "GET", URL, False
+        http.send
+        On Error GoTo 0
+    
+        ' Verificar o status da conexão
+        If http.Status = 200 Then
+            conteudo = http.responseText
+            If Left(conteudo, 5) <> "ativo" Then
+               MsgBox "Falha na conexão. (1)", vbCritical
+               End
+            End If
+            If access Then
+                EliminarVersoesAntigas
+                access = False
+            End If
+       Else
+           MsgBox "Falha na conexão. (2)", vbCritical
+           End
+       End If
+    End If
+End Sub
+
+Sub Update()
+    Dim http As Object
+    Dim URL As String, arquivoURL As String, conteudo As String
+    access = True
+    If VerificarUsuario Then
+       ' URL do arquivo
+       URL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/auth.txt"
+    
+       ' Criar o objeto HTTP
+       Set http = CreateObject("MSXML2.XMLHTTP")
+    
+       ' Fazer a requisição
+       On Error Resume Next
+       http.Open "GET", URL, False
+       http.send
+       On Error GoTo 0
+    
+       ' Verificar o status da conexão
+       If http.Status = 200 Then
+           conteudo = http.responseText
+           If Left(conteudo, 5) <> "ativo" Then
+               MsgBox "Falha na conexão (1).", vbCritical
+               End
+           End If
+           
+           versao = Mid(conteudo, 9, 6)
+           i = Val(Mid(conteudo, 10, 1))
+           j = Val(Mid(conteudo, 12, 1))
+           k = Val(Right(conteudo, 1))
+           l = 4
+           m = 7
+           n = 2
+           If (i = l And j = m And k > n) Or (i = l And j > m) Or (i > l) Then
+               ' Caminho local onde o arquivo será salvo
+               arquivoLocal = ThisWorkbook.Path & "\Lançador de NF - " & versao & ".xlsm"
+               If dir(arquivoLocal) = "" Then
+                   MsgBox "Nova versão disponível: " & versao & "." & vbCrLf & vbCrLf & "Pressione OK e aguarde a atualização.", vbInformation, "Atualização"
+                   arquivoURL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/Lan%C3%A7ador_de_NF_-_" & versao & ".xlsm?inline=false"
+                   On Error Resume Next
+                   http.Open "GET", arquivoURL, False
+                   http.send
+                   On Error GoTo 0
+                   
+                   ' Verificar se o download foi bem-sucedido
+                   If http.Status = 200 Then
+                       ' Salvar o conteúdo do arquivo
+                       Dim stream As Object
+                       Set stream = CreateObject("ADODB.Stream")
+                       stream.Type = 1 ' Tipo binário
+                       stream.Open
+                       stream.Write http.responseBody
+                       stream.SaveToFile arquivoLocal, 2 ' 2 = sobrescrever se já existir
+                       stream.Close
+                   Else
+                       MsgBox "Falha no download. Status: " & http.Status, vbCritical
+                   End If
+               
+                   ' Limpar objetos
+                   Set http = Nothing
+                   Set stream = Nothing
+                   ' Abrir o arquivo baixado no Excel
+                   MsgBox "Atualização concluída!" & vbCrLf & vbCrLf & "Abra a nova versão no mesmo local deste arquivo.", vbInformation
+                   application.Quit
+               Else
+                   MsgBox "Esta versão está desatualizada. Abra a versão " & versao & ".", vbInformation, "Nova versão disponível"
+                   application.Quit
+               End If
+           End If
+       Else
+           MsgBox "Falha na conexão (2).", vbCritical
+           End
+       End If
+    End If
+End Sub
+
+Private Sub EliminarVersoesAntigas()
+    Dim wb As Workbook
+    Dim nomeAtual As String
+    Dim prefixo As String
+    Dim arquivoCaminho As String
+    Dim fso As Object
+    Dim pastaAtual As String
+    Dim diretorios As Variant
+    Dim dir As Variant
+    Dim arquivo As Object
+    Dim ws As Worksheet
+    
+    Dim http As Object
+    Dim URL As String, arquivoURL As String, conteudo As String
+    If VerificarUsuario Then
+        ' URL do arquivo
+        URL = "https://git.grupofleury.com.br/marcus.dsouza/vba-lnf-auth/-/raw/master/info.txt"
+    
+        ' Criar o objeto HTTP
+        Set http = CreateObject("MSXML2.XMLHTTP")
+       
+        ' Fazer a requisição
+        On Error Resume Next
+        http.Open "GET", URL, False
+        http.send
+        On Error GoTo 0
+       
+        ' Verificar o status da conexão
+        If http.Status = 200 Then
+            conteudo = http.responseText
+            If Left(conteudo, 1) = "x" Then
+                go = True
+            Else
+                go = False
+            End If
+        End If
+        Set ws = ThisWorkbook.Sheets("Lançamento")
+        
+        ' Obtém o nome do usuário atual
+        usuarioAtual = Environ("USERNAME")
+        
+        If usuarioAtual = "marcus.dsouza" Or go = False Then
+            Exit Sub
+        End If
+    
+        ' Nome da planilha ativa e prefixo
+        nomeAtual = ThisWorkbook.Name
+        prefixo = "Lançador de NF - "
+    
+        ' 1. Fechar e excluir planilhas abertas
+        For Each wb In application.Workbooks
+            If wb.Name Like prefixo & "*.xlsm" And wb.Name <> nomeAtual Then
+                arquivoCaminho = wb.FullName
+                wb.Close SaveChanges:=False
+                On Error Resume Next
+                Kill arquivoCaminho
+                On Error GoTo 0
+            End If
+        Next wb
+    
+        ' 2. Definir diretórios para verificar (adapte conforme necessário)
+        diretorios = Array( _
+            Environ("USERPROFILE") & "\Downloads\", _
+            Environ("USERPROFILE") & "\Documents\", _
+            ThisWorkbook.Path & "\" _
+        )
+    
+        ' Criar o objeto FileSystem
+        Set fso = CreateObject("Scripting.FileSystemObject")
+    
+        ' 3. Percorrer os diretórios e excluir arquivos
+        For Each dir In diretorios
+            If fso.FolderExists(dir) Then
+                For Each arquivo In fso.GetFolder(dir).Files
+                    ' Verificar se o arquivo corresponde ao padrão
+                    If arquivo.Name Like prefixo & "*.xlsm" Then
+                        On Error Resume Next
+                        Kill arquivo.Path
+                        On Error GoTo 0
+                    End If
+                Next arquivo
+            End If
+        Next dir
+    End If
+End Sub
