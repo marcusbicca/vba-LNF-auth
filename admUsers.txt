@@ -3,3 +3,4 @@ joao.desiderio
 lucas.lopes
 vinicius.marcolino
 renan.dsilva
+inhaus.antoniel
