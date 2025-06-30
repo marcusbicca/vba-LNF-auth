@@ -1,5 +1,5 @@
 status:ativo
-versao:v4.8.1
-layout:v1.0.1
+versao:v4.8.2
+layout:v1.0.2
 comando:a
 data:01.07.2025
