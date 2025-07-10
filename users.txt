@@ -10,3 +10,4 @@ carla.cristina
 inhaus.denilson
 walter.junior1
 inhaus.raphael
+inhaus.hariadni
