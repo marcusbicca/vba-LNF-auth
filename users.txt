@@ -12,3 +12,4 @@ walter.junior1
 inhaus.raphael
 inhaus.lucass
 sergio.andrade
+vanderley.araujo
