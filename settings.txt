@@ -1,6 +1,7 @@
-status:ativo
+status:
 versao:v4.8.4
 layout:v1.0.3
 comando:a
 data:
+
 
